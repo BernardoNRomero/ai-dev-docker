@@ -1,0 +1,6 @@
+Host *
+    StrictHostKeyChecking accept-new
+    UserKnownHostsFile /tmp/known_hosts
+    IdentityFile /root/.ssh/id_ed25519
+    IdentityFile /root/.ssh/id_rsa
+    IdentityFile /root/.ssh/id_ecdsa

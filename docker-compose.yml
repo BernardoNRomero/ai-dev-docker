@@ -1,0 +1,123 @@
+name: ai-dev
+
+services:
+  workstation:
+    build:
+      context: ./workstation
+    image: ai-dev-workstation:local
+    init: true
+    working_dir: /workspace
+    environment:
+      AI_BACKEND: ${AI_BACKEND:-ollama}
+      AI_MODEL: ${AI_MODEL:-qwen2.5-coder:3b}
+      AIDER_EDIT_FORMAT: ${AIDER_EDIT_FORMAT:-whole}
+      AIDER_MAP_TOKENS: ${AIDER_MAP_TOKENS:-0}
+      OLLAMA_API_BASE: http://ollama:11434
+      OPENAI_API_BASE: ${OPENAI_API_BASE:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ORACLE_USER: ${ORACLE_USER:-dev}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-}
+      ORACLE_DSN: ${ORACLE_DSN:-oracle:1521/FREEPDB1}
+    volumes:
+      - ./workspace:/workspace
+      - ${SSH_DIR:-./ssh}:/root/.ssh:ro
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:80"
+    mem_limit: ${WORKSTATION_MEM_LIMIT:-1400m}
+    cpus: ${WORKSTATION_CPUS:-2}
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["local"]
+    environment:
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-1}
+      OLLAMA_CONTEXT_LENGTH: ${OLLAMA_NUM_CTX:-4096}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-5m}
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: ${OLLAMA_KV_CACHE_TYPE:-q8_0}
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "127.0.0.1:${OLLAMA_PORT:-11434}:11434"
+    mem_limit: ${OLLAMA_MEM_LIMIT:-3800m}
+    cpus: ${OLLAMA_CPUS:-6}
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  model-pull:
+    image: ollama/ollama:latest
+    profiles: ["local"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      AI_MODEL: ${AI_MODEL:-qwen2.5-coder:3b}
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -eu
+        echo "Esperando a Ollama..."
+        i=0
+        until ollama list >/dev/null 2>&1; do
+          i=$$((i + 1))
+          if [ "$$i" -gt 60 ]; then
+            echo "Ollama no respondio a tiempo" >&2
+            exit 1
+          fi
+          sleep 2
+        done
+        echo "Descargando $$AI_MODEL"
+        ollama pull "$$AI_MODEL"
+        echo "Modelo listo: $$AI_MODEL"
+    mem_limit: 256m
+    restart: "no"
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    profiles: ["web"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      WEBUI_AUTH: "false"
+    volumes:
+      - open-webui:/app/backend/data
+    ports:
+      - "127.0.0.1:${WEBUI_PORT:-3000}:8080"
+    mem_limit: ${WEBUI_MEM_LIMIT:-1024m}
+    restart: unless-stopped
+
+  oracle:
+    image: gvenzl/oracle-free:23-slim
+    profiles: ["oracle"]
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-}
+      APP_USER: ${ORACLE_USER:-dev}
+      APP_USER_PASSWORD: ${ORACLE_APP_PASSWORD:-}
+    ports:
+      - "127.0.0.1:${ORACLE_PORT:-1521}:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    shm_size: 1gb
+    mem_limit: ${ORACLE_MEM_LIMIT:-2g}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 40
+      start_period: 120s
+    restart: unless-stopped
+
+volumes:
+  ollama-data:
+  open-webui:
+  oracle-data:

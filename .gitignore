@@ -1,0 +1,8 @@
+.env
+.env.runtime
+ssh/*
+!ssh/.gitkeep
+workspace/*
+!workspace/.gitkeep
+!workspace/index.php
+*.log
