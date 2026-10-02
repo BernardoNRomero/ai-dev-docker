@@ -112,6 +112,27 @@ El agente pide confirmacion antes de editar o ejecutar comandos. No aplica cambi
 
 El codigo va en [workspace/](workspace). Apache publica esa carpeta.
 
+### API REST
+
+El entorno incluye un endpoint para consultar al modelo configurado y otro para comprobar el estado:
+
+- `GET /api/status` devuelve el estado de la API.
+- `POST /api/chat` envía el campo `prompt` al modelo y devuelve el texto generado.
+
+Con el entorno levantado:
+
+```bash
+curl http://127.0.0.1:8086/api/status
+
+curl -X POST http://127.0.0.1:8086/api/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Explicame en una frase qué es una API REST"}'
+```
+
+La respuesta incluye `ok`, el nombre del `model` y el texto generado en `response`. El endpoint usa `AI_BACKEND`, `AI_MODEL` y las variables de conexión existentes: Ollama local cuando el backend es `ollama`, o una API compatible con OpenAI cuando es `openai`. Para esta última, configura `OPENAI_API_BASE` y `OPENAI_API_KEY` en `.env` y levanta el entorno con `./bin/up.sh --api`.
+
+La API no requiere autenticación y está pensada para uso local; no la expongas en una red compartida o pública sin agregar autenticación y controles adecuados. Las solicitudes se envían al proveedor de IA configurado y pueden tener costo según sus condiciones. Los endpoints se implementan en [workspace/api/](workspace/api).
+
 Dentro del contenedor:
 
 ```bash

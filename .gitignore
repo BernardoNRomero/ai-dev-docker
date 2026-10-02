@@ -5,4 +5,5 @@ ssh/*
 workspace/*
 !workspace/.gitkeep
 !workspace/index.php
+!workspace/api/
 *.log

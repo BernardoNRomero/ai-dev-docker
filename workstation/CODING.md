@@ -1,6 +1,6 @@
 # Convenciones del entorno
 
-Responde siempre en espanol. El codigo, los nombres y los comentarios tecnicos van en ingles, salvo pedido contrario.
+Responde siempre en espanol. El codigo, los nombres y los comentarios tecnicos van en español, salvo pedido contrario.
 
 Trabaja solo dentro de /workspace. No inventes credenciales, hosts ni claves SSH. Si falta un dato, dilo y deja un placeholder claro.
 
@@ -31,6 +31,7 @@ Trabaja solo dentro de /workspace. No inventes credenciales, hosts ni claves SSH
 - `SET SERVEROUTPUT ON` no es PL/SQL: el runner `plsql` ya lo interpreta.
 - Probar con `plsql archivo.sql`. DSN por variables `ORACLE_USER`, `ORACLE_PASSWORD`, `ORACLE_DSN`.
 - No des por ejecutado un bloque que no corriste.
+- No hacer DELETE en ningun script.
 
 ## SSH y comandos
 
